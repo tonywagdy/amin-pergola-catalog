@@ -1,160 +1,97 @@
-import { forwardRef, useMemo, useRef, useState } from 'react'
+import { forwardRef, useRef, useState } from 'react'
 import HTMLFlipBook from 'react-pageflip'
 import './App.css'
 
 const pages = [
-  {
-    title: 'Digital Stories',
-    subtitle: 'Issue 01',
-    text: 'Flip-ready portfolio inspired by modern interactive magazines.',
-    tone: 'cover',
-  },
-  {
-    title: 'Editorial',
-    subtitle: 'Opening Note',
-    text: 'Build immersive experiences with smooth page turns and tactile depth.',
-    tone: 'a',
-  },
-  {
-    title: 'Featured Work',
-    subtitle: 'Showcase',
-    text: 'Mix typography, photography, and motion for a premium reading flow.',
-    tone: 'b',
-  },
-  {
-    title: 'About Project',
-    subtitle: 'Concept',
-    text: 'This template is ideal for catalogs, lookbooks, magazines, and menus.',
-    tone: 'c',
-  },
-  {
-    title: 'Visual Direction',
-    subtitle: 'Design System',
-    text: 'Strong contrast, layered paper texture, and editorial spacing.',
-    tone: 'd',
-  },
-  {
-    title: 'Interactive Feel',
-    subtitle: 'Motion',
-    text: 'Drag a page corner or click the controls to move like a real book.',
-    tone: 'e',
-  },
-  {
-    title: 'Brand Pages',
-    subtitle: 'Customization',
-    text: 'Swap copy, colors, and visuals to match your brand in minutes.',
-    tone: 'f',
-  },
-  {
-    title: 'Contact',
-    subtitle: 'Next Step',
-    text: 'Ready to publish. Add your own pages and deploy as a web experience.',
-    tone: 'g',
-  },
+  '/pages/page1.jpg',
+  '/pages/page2.jpg',
+  '/pages/page3.jpg',
+  '/pages/page4.jpg',
+  '/pages/page5.jpg',
+  '/pages/page6.jpg',
+  '/pages/page7.jpg',
+  '/pages/page8.jpg',
+  '/pages/page9.jpg',
+  '/pages/page10.jpg',
 ]
 
-const FlipPage = forwardRef(({ page, index, total }, ref) => {
-  return (
-    <article ref={ref} className={`page tone-${page.tone}`}>
-      <div className="page-inner">
-        <p className="page-subtitle">{page.subtitle}</p>
-        <h2>{page.title}</h2>
-        <p className="page-text">{page.text}</p>
-        <div className="page-footer">
-          <span>www.yourbrand.com</span>
-          <span>
-            {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-          </span>
-        </div>
-      </div>
-    </article>
-  )
-})
-
-FlipPage.displayName = 'FlipPage'
+const ImagePage = forwardRef(({ src, index }, ref) => (
+  <div ref={ref} className="page">
+    <img src={src} alt={`صفحة ${index + 1}`} className="page-img" draggable={false} />
+  </div>
+))
+ImagePage.displayName = 'ImagePage'
 
 function App() {
   const bookRef = useRef(null)
   const [currentPage, setCurrentPage] = useState(0)
   const lastPage = pages.length - 1
+  const progress = Math.round(((currentPage + 1) / pages.length) * 100)
 
-  const progress = useMemo(() => {
-    if (lastPage <= 0) return 0
-    return Math.round((currentPage / lastPage) * 100)
-  }, [currentPage, lastPage])
-
-  const goNext = () => bookRef.current?.pageFlip()?.flipNext()
-  const goPrev = () => bookRef.current?.pageFlip()?.flipPrev()
+  const goNext  = () => bookRef.current?.pageFlip()?.flipNext()
+  const goPrev  = () => bookRef.current?.pageFlip()?.flipPrev()
   const goFirst = () => bookRef.current?.pageFlip()?.flip(0)
-  const goLast = () => bookRef.current?.pageFlip()?.flip(lastPage)
+  const goLast  = () => bookRef.current?.pageFlip()?.flip(lastPage)
 
   return (
-    <main className="app">
+    <main className="app" dir="rtl">
+      {/* Header */}
       <header className="topbar">
-        <div>
-          <p className="kicker">Flipbook Studio</p>
-          <h1>Interactive Magazine</h1>
+        <div className="brand">
+          <p className="brand-sub">كتالوج أعمالنا</p>
+          <h1>الأمين للبرجولات</h1>
         </div>
         <div className="meta">
-          <span>Page {currentPage + 1}</span>
-          <span>{progress}%</span>
+          <span>صفحة {currentPage + 1} / {pages.length}</span>
+          <span className="meta-pct">{progress}%</span>
         </div>
       </header>
 
-      <section className="book-shell">
-        <div className="progress-track" aria-hidden>
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
-        </div>
+      {/* Progress */}
+      <div className="progress-track" aria-hidden>
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
+      </div>
 
+      {/* Book */}
+      <section className="book-shell">
         <HTMLFlipBook
           ref={bookRef}
-          width={520}
-          height={700}
+          width={420}
+          height={595}
           size="stretch"
-          minWidth={280}
-          maxWidth={900}
+          minWidth={260}
+          maxWidth={520}
           minHeight={360}
-          maxHeight={1100}
-          maxShadowOpacity={0.45}
+          maxHeight={740}
+          maxShadowOpacity={0.5}
           showCover
           mobileScrollSupport
           flippingTime={700}
           onFlip={(e) => setCurrentPage(e.data)}
           className="flipbook"
-          startPage={0}
           drawShadow
-          usePortrait
-          startZIndex={0}
+          usePortrait={false}
+          startZIndex={10}
           autoSize
-          clickEventForward
-          useMouseEvents
-          swipeDistance={30}
           showPageCorners
-          disableFlipByClick={false}
+          swipeDistance={30}
         >
-          {pages.map((page, index) => (
-            <FlipPage key={page.title} page={page} index={index} total={pages.length} />
+          {pages.map((src, i) => (
+            <ImagePage key={i} src={src} index={i} />
           ))}
         </HTMLFlipBook>
       </section>
 
+      {/* Controls */}
       <nav className="controls">
-        <button onClick={goFirst} disabled={currentPage === 0}>
-          First
-        </button>
-        <button onClick={goPrev} disabled={currentPage === 0}>
-          Prev
-        </button>
-        <button onClick={goNext} disabled={currentPage === lastPage}>
-          Next
-        </button>
-        <button onClick={goLast} disabled={currentPage === lastPage}>
-          Last
-        </button>
+        <button onClick={goLast}  disabled={currentPage === lastPage}>الأخير ⏭</button>
+        <button onClick={goNext}  disabled={currentPage === lastPage}>التالي ▶</button>
+        <button onClick={goPrev}  disabled={currentPage === 0}>◀ السابق</button>
+        <button onClick={goFirst} disabled={currentPage === 0}>⏮ الأول</button>
       </nav>
 
       <footer className="hint">
-        اسحب من الزاوية أو استخدم الأزرار للتقليب
+        اسحب من زاوية الصفحة أو استخدم الأزرار للتقليب
       </footer>
     </main>
   )
