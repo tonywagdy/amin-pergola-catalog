@@ -78,6 +78,15 @@ h1 {
   margin: 0 auto;
 }
 
+.empty-state {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
 /* ── Page ── */
 .page {
   background: #fff;
