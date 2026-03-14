@@ -15,6 +15,41 @@
   gap: 1rem;
 }
 
+.brand-with-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo-wrap {
+  width: 62px;
+  height: 62px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(122, 74, 0, 0.16);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-logo-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #274b7a, #16355f);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .brand-sub {
   margin: 0;
   letter-spacing: 0.06em;
@@ -78,10 +113,71 @@ h1 {
   margin: 0 auto;
 }
 
+.empty-state {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
 /* ── Page ── */
 .page {
   background: #fff;
   overflow: hidden;
+}
+
+.cover-page {
+  background: radial-gradient(circle at 30% 10%, #fff6e3, #f0dfb7 65%, #e4c98b);
+}
+
+.cover-card {
+  height: 100%;
+  padding: 2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+
+.cover-logo {
+  width: min(260px, 82%);
+  max-height: 240px;
+  object-fit: contain;
+}
+
+.cover-logo-fallback {
+  display: none;
+  width: 130px;
+  height: 130px;
+  border-radius: 24px;
+  place-items: center;
+  background: linear-gradient(145deg, #274b7a, #16355f);
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.cover-kicker {
+  margin: 0.7rem 0 0;
+  color: #6e5122;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+
+.cover-card h2 {
+  margin: 0.15rem 0 0;
+  color: #17375f;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.cover-card p {
+  margin: 0;
+  color: #6e5122;
+  font-weight: 700;
 }
 
 .page-img {
@@ -137,12 +233,65 @@ h1 {
 @media (max-width: 650px) {
   .topbar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .brand-with-logo {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .meta {
+    width: 100%;
+    justify-content: space-between;
+    font-size: 0.95rem;
+  }
+
+  .brand-logo-wrap {
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+  }
+
+  .controls {
+    gap: 0.45rem;
   }
 
   .controls button {
     min-width: 72px;
     padding: 0.48rem 0.85rem;
     font-size: 0.82rem;
+  }
+}
+
+
+@media (max-width: 420px) {
+  .app {
+    width: 95vw;
+    padding-top: 1.1rem;
+  }
+
+  .brand-sub {
+    font-size: 0.72rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+}
+
+
+.credit {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(30, 45, 65, 0.75);
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 420px) {
+  .credit {
+    font-size: 0.76rem;
   }
 }
