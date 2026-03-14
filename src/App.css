@@ -258,11 +258,6 @@ h1 {
     gap: 0.45rem;
   }
 
-  .brand-logo-wrap {
-    width: 54px;
-    height: 54px;
-  }
-
   .controls button {
     min-width: 72px;
     padding: 0.48rem 0.85rem;
@@ -283,5 +278,20 @@ h1 {
 
   h1 {
     font-size: 1.6rem;
+  }
+}
+
+
+.credit {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(30, 45, 65, 0.75);
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 420px) {
+  .credit {
+    font-size: 0.76rem;
   }
 }

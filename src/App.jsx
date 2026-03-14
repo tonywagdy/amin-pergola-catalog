@@ -184,6 +184,8 @@ function App() {
         <button onClick={goFirst} disabled={currentPage === 0}>⏮ الأول</button>
       </nav>
 
+      <p className="credit">© 2026 Amin Pergola — Developed by Tony Wagdy</p>
+
     </main>
   )
 }
