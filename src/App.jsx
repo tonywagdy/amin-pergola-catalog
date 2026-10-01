@@ -1,191 +1,236 @@
-import { forwardRef, useEffect, useRef, useState } from 'react'
-import HTMLFlipBook from 'react-pageflip'
+import { useState, useEffect, useCallback } from 'react'
+import Header from './components/Header'
+import FlipCatalog from './components/FlipCatalog'
+import GalleryView from './components/GalleryView'
+import DashboardModal from './components/Dashboard/DashboardModal'
+import AdminAuthModal from './components/Dashboard/AdminAuthModal'
+import LightboxModal from './components/LightboxModal'
+import {
+  getCatalog,
+  saveCatalog,
+  resetCatalogToDefault,
+  getSettings,
+  saveSettings,
+  DEFAULT_WHATSAPP,
+} from './utils/storage'
+import { Lock } from 'lucide-react'
 import './App.css'
 
-const MAX_PAGES_TO_SCAN = 300
-const CONSECUTIVE_MISSES_LIMIT = 12
-const SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
-const BRAND_LOGO_PATH = 'logo.png'
-
-const ImagePage = forwardRef(({ src, index }, ref) => (
-  <div ref={ref} className="page">
-    <img src={src} alt={`صفحة ${index}`} className="page-img" draggable={false} />
-  </div>
-))
-ImagePage.displayName = 'ImagePage'
-
-const CoverPage = forwardRef(({ logoUrl }, ref) => (
-  <div ref={ref} className="page cover-page">
-    <div className="cover-card">
-      <img
-        src={logoUrl}
-        alt="شعار الأمين للبرجولات"
-        className="cover-logo"
-        draggable={false}
-        onError={(event) => {
-          event.currentTarget.style.display = 'none'
-          const fallback = event.currentTarget.nextElementSibling
-          if (fallback) fallback.style.display = 'grid'
-        }}
-      />
-      <div className="cover-logo-fallback" aria-hidden>
-        AP
-      </div>
-      <p className="cover-kicker">كتالوج أعمالنا</p>
-      <h2>الأمين للبرجولات</h2>
-      <p>والأعمال الخشبية</p>
-    </div>
-  </div>
-))
-CoverPage.displayName = 'CoverPage'
-
-function buildPageUrl(pageNumber, extension) {
-  return `${import.meta.env.BASE_URL}pages/page${pageNumber}.${extension}`
-}
-
-function imageExists(url) {
-  return new Promise((resolve) => {
-    const image = new Image()
-    image.onload = () => resolve(true)
-    image.onerror = () => resolve(false)
-    image.src = `${url}?v=${Date.now()}`
-  })
-}
-
-async function findExistingPageUrl(pageNumber) {
-  for (const extension of SUPPORTED_EXTENSIONS) {
-    const url = buildPageUrl(pageNumber, extension)
-    const exists = await imageExists(url)
-    if (exists) return url
-  }
-  return null
-}
-
 function App() {
-  const bookRef = useRef(null)
-  const logoUrl = `${import.meta.env.BASE_URL}${BRAND_LOGO_PATH}`
-
   const [pages, setPages] = useState([])
-  const [isLoadingPages, setIsLoadingPages] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(0)
-  const [showHeaderLogoFallback, setShowHeaderLogoFallback] = useState(false)
+  const [viewMode, setViewMode] = useState('book') // 'book' or 'grid'
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('amin_admin_auth') === 'true'
+    }
+    return false
+  })
 
+  const [isDashboardOpen, setIsDashboardOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.has('admin') && localStorage.getItem('amin_admin_auth') === 'true'
+    }
+    return false
+  })
+
+  const [isAdminAuthOpen, setIsAdminAuthOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.has('admin') && localStorage.getItem('amin_admin_auth') !== 'true'
+    }
+    return false
+  })
+
+  const [lightboxData, setLightboxData] = useState(null) // { page, index }
+  const [settings, setSettings] = useState(getSettings())
+
+  const logoUrl = '/logo.png'
+
+  // تحميل الكتالوج فوراً عند بدء التطبيق
   useEffect(() => {
     let isCancelled = false
 
-    async function loadPages() {
-      const discovered = []
-      let misses = 0
-
-      for (let i = 1; i <= MAX_PAGES_TO_SCAN && misses < CONSECUTIVE_MISSES_LIMIT; i += 1) {
-        const foundUrl = await findExistingPageUrl(i)
-        if (foundUrl) {
-          discovered.push(foundUrl)
-          misses = 0
-        } else {
-          misses += 1
+    async function loadData() {
+      try {
+        const storedPages = await getCatalog()
+        if (!isCancelled) {
+          setPages(storedPages)
+          setIsLoading(false)
         }
-      }
-
-      if (!isCancelled) {
-        setPages(discovered)
-        setCurrentPage(0)
-        setIsLoadingPages(false)
+      } catch (err) {
+        console.error('Failed to load catalog:', err)
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
-    loadPages()
-
+    loadData()
     return () => {
       isCancelled = true
     }
   }, [])
 
-  const totalPages = pages.length + 1
-  const lastPage = totalPages - 1
-  const progress = totalPages > 0 ? Math.round(((currentPage + 1) / totalPages) * 100) : 0
+  // حفظ التعديلات على الصفحات في قاعدة البيانات
+  const handleUpdatePages = useCallback(async (newPages) => {
+    setPages(newPages)
+    await saveCatalog(newPages)
+  }, [])
 
-  const pageLabel = isLoadingPages
-    ? 'جاري تحميل الصفحات...'
-    : currentPage === 0
-      ? `الغلاف 1 / ${totalPages}`
-      : `صفحة ${currentPage + 1} / ${totalPages}`
+  // إعادة ضبط الكتالوج الأصلي
+  const handleResetCatalog = useCallback(async () => {
+    const defaultPages = await resetCatalogToDefault()
+    setPages(defaultPages)
+    setCurrentPage(0)
+  }, [])
 
-  const goNext = () => bookRef.current?.pageFlip()?.flipNext()
-  const goPrev = () => bookRef.current?.pageFlip()?.flipPrev()
-  const goFirst = () => bookRef.current?.pageFlip()?.flip(0)
-  const goLast = () => bookRef.current?.pageFlip()?.flip(lastPage)
+  // تحديث الإعدادات
+  const handleUpdateSettings = useCallback((newSettings) => {
+    setSettings(newSettings)
+    saveSettings(newSettings)
+  }, [])
+
+  // فتح صفحة من المعرض داخل الكتالوج التفاعلي
+  const handleSelectPageFromGallery = useCallback((targetPageNum) => {
+    setCurrentPage(targetPageNum)
+    setViewMode('book')
+  }, [])
+
+  // فتح نافذة المعاينة المكبرة (Lightbox)
+  const handleOpenLightbox = useCallback((page, index) => {
+    setLightboxData({ page, index })
+  }, [])
+
+  // التنقل داخل Lightbox
+  const handleNextLightbox = useCallback(() => {
+    if (!lightboxData) return
+    const nextIdx = (lightboxData.index + 1) % pages.length
+    setLightboxData({ page: pages[nextIdx], index: nextIdx })
+  }, [lightboxData, pages])
+
+  const handlePrevLightbox = useCallback(() => {
+    if (!lightboxData) return
+    const prevIdx = (lightboxData.index - 1 + pages.length) % pages.length
+    setLightboxData({ page: pages[prevIdx], index: prevIdx })
+  }, [lightboxData, pages])
+
+  // فتح بوابة الإدارة
+  const handleOpenAdminPortal = () => {
+    if (isAdminLoggedIn) {
+      setIsDashboardOpen(true)
+    } else {
+      setIsAdminAuthOpen(true)
+    }
+  }
+
+  // نجاح تسجيل دخول المالك المعتمد (twagdy067@gmail.com)
+  const handleAdminAuthenticated = () => {
+    setIsAdminLoggedIn(true)
+    localStorage.setItem('amin_admin_auth', 'true')
+    setIsAdminAuthOpen(false)
+    setIsDashboardOpen(true)
+  }
+
+  // تسجيل الخروج وقفل لوحة التحكم
+  const handleAdminLogout = () => {
+    setIsAdminLoggedIn(false)
+    localStorage.removeItem('amin_admin_auth')
+    setIsDashboardOpen(false)
+    // تنظيف معلمات الرابط
+    const url = new URL(window.location)
+    url.searchParams.delete('admin')
+    window.history.replaceState({}, '', url)
+  }
 
   return (
-    <main className="app" dir="rtl">
-      <header className="topbar">
-        <div className="brand brand-with-logo">
-          <div className="brand-logo-wrap">
-            {!showHeaderLogoFallback ? (
-              <img
-                src={logoUrl}
-                alt="شعار الأمين للبرجولات"
-                className="brand-logo"
-                onError={() => setShowHeaderLogoFallback(true)}
-              />
-            ) : (
-              <div className="brand-logo-fallback" aria-hidden>AP</div>
-            )}
-          </div>
-          <div>
-            <p className="brand-sub">كتالوج أعمالنا</p>
-            <h1>الأمين للبرجولات</h1>
-          </div>
+    <main className="app-container" dir="rtl">
+      {/* الشريط العلوي العام المخصص بالكامل للعميل */}
+      <Header
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        totalPhotos={pages.length}
+        whatsappNumber={settings?.whatsappNumber || DEFAULT_WHATSAPP}
+        logoUrl={logoUrl}
+      />
+
+      {/* محتوى الكتالوج */}
+      {isLoading ? (
+        <div className="empty-state">
+          <span className="spinner" />
+          <p>جاري تجهيز الكتالوج السريع للأمين للبرجولات...</p>
         </div>
+      ) : (
+        <>
+          {viewMode === 'book' ? (
+            <FlipCatalog
+              pages={pages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              logoUrl={logoUrl}
+              onOpenLightbox={handleOpenLightbox}
+            />
+          ) : (
+            <GalleryView
+              pages={pages}
+              onSelectPage={handleSelectPageFromGallery}
+              onOpenLightbox={handleOpenLightbox}
+            />
+          )}
+        </>
+      )}
 
-        <div className="meta">
-          <span>{pageLabel}</span>
-          <span className="meta-pct">{progress}%</span>
+      {/* بوابة تحقق المالك (twagdy067@gmail.com فقط وكلمة المرور) */}
+      <AdminAuthModal
+        isOpen={isAdminAuthOpen}
+        onClose={() => setIsAdminAuthOpen(false)}
+        onAuthenticated={handleAdminAuthenticated}
+        currentPassword={settings?.adminPassword}
+      />
+
+      {/* لوحة التحكم المنفصلة بالكامل */}
+      <DashboardModal
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        pages={pages}
+        onUpdatePages={handleUpdatePages}
+        onResetCatalog={handleResetCatalog}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        onLogout={handleAdminLogout}
+      />
+
+      {/* شاشة التكبير والمعاينة المكبرة Lightbox */}
+      {lightboxData && (
+        <LightboxModal
+          key={lightboxData.page.id}
+          image={lightboxData.page}
+          pageNumber={lightboxData.index + 1}
+          totalPages={pages.length}
+          onClose={() => setLightboxData(null)}
+          onNext={pages.length > 1 ? handleNextLightbox : null}
+          onPrev={pages.length > 1 ? handlePrevLightbox : null}
+          whatsappNumber={settings?.whatsappNumber || DEFAULT_WHATSAPP}
+        />
+      )}
+
+      {/* التذييل العام للعملاء مع مدخل الإدارة السري للمالك */}
+      <footer className="app-footer">
+        <p>© 2026 الأمين للبرجولات والأعمال الخشبية الفاخرة — جميع الحقوق محفوظة</p>
+        <div className="footer-bottom-row">
+          <span className="credit">تصميم وتطوير الكتالوج الذكي التفاعلي بأعلى معايير السرعة والأداء</span>
+          <button
+            className="admin-secret-portal"
+            onClick={handleOpenAdminPortal}
+            title="بوابة إدارة المالك المصرح له"
+          >
+            <Lock size={12} />
+            <span>بوابة المالك</span>
+          </button>
         </div>
-      </header>
-
-      <div className="progress-track" aria-hidden>
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <section className="book-shell">
-        <HTMLFlipBook
-          ref={bookRef}
-          width={420}
-          height={595}
-          size="stretch"
-          minWidth={260}
-          maxWidth={520}
-          minHeight={360}
-          maxHeight={740}
-          maxShadowOpacity={0.5}
-          mobileScrollSupport
-          flippingTime={700}
-          onFlip={(e) => setCurrentPage(e.data)}
-          className="flipbook"
-          drawShadow
-          usePortrait
-          startZIndex={10}
-          autoSize
-          showPageCorners
-          swipeDistance={30}
-        >
-          <CoverPage logoUrl={logoUrl} />
-          {pages.map((src, i) => (
-            <ImagePage key={src} src={src} index={i + 1} />
-          ))}
-        </HTMLFlipBook>
-      </section>
-
-      <nav className="controls">
-        <button onClick={goLast} disabled={currentPage === lastPage}>الأخير ⏭</button>
-        <button onClick={goNext} disabled={currentPage === lastPage}>التالي ▶</button>
-        <button onClick={goPrev} disabled={currentPage === 0}>◀ السابق</button>
-        <button onClick={goFirst} disabled={currentPage === 0}>⏮ الأول</button>
-      </nav>
-
-      <p className="credit">© 2026 Amin Pergola — Developed by Tony Wagdy</p>
-
+      </footer>
     </main>
   )
 }
