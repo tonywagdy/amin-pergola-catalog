@@ -9,6 +9,9 @@ export const DEFAULT_CATEGORIES = [
   'ديكورات وأعمال خشبية',
 ]
 
+const rawBase = import.meta.env.BASE_URL || './'
+export const APP_BASE = rawBase.endsWith('/') ? rawBase : `${rawBase}/`
+
 export const INITIAL_PAGES = Array.from({ length: 56 }, (_, i) => {
   const pageNum = i + 1
   let category = 'برجولات حدائق'
@@ -27,8 +30,8 @@ export const INITIAL_PAGES = Array.from({ length: 56 }, (_, i) => {
     pageNum,
     title: `تصميم برجولة خشبية #${pageNum}`,
     category,
-    src: `/pages/page${pageNum}.jpg`,
-    thumbnail: `/pages/page${pageNum}.jpg`,
+    src: `${APP_BASE}pages/page${pageNum}.jpg`,
+    thumbnail: `${APP_BASE}pages/page${pageNum}.jpg`,
     isDefault: true,
     addedAt: Date.now() - (56 - pageNum) * 60000,
   }

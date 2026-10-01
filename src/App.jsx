@@ -13,6 +13,7 @@ import {
   saveSettings,
   DEFAULT_WHATSAPP,
 } from './utils/storage'
+import { APP_BASE } from './data/defaultCatalog'
 import { Lock } from 'lucide-react'
 import './App.css'
 
@@ -47,7 +48,7 @@ function App() {
   const [lightboxData, setLightboxData] = useState(null) // { page, index }
   const [settings, setSettings] = useState(getSettings())
 
-  const logoUrl = '/logo.png'
+  const logoUrl = `${APP_BASE}logo.png`
 
   // تحميل الكتالوج فوراً عند بدء التطبيق
   useEffect(() => {

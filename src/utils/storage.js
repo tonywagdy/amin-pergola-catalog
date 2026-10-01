@@ -1,9 +1,25 @@
-import { INITIAL_PAGES } from '../data/defaultCatalog'
+import { INITIAL_PAGES, APP_BASE } from '../data/defaultCatalog'
 
 const DB_NAME = 'amin_pergola_db'
 const DB_VERSION = 1
 const STORE_NAME = 'catalog_pages'
 const SETTINGS_KEY = 'amin_catalog_settings'
+
+function normalizePages(items) {
+  if (!items || !Array.isArray(items)) return items
+  return items.map((p) => {
+    if (p.src && p.src.startsWith('/pages/') && APP_BASE !== '/') {
+      return {
+        ...p,
+        src: `${APP_BASE}${p.src.replace(/^\//, '')}`,
+        thumbnail: p.thumbnail && p.thumbnail.startsWith('/pages/')
+          ? `${APP_BASE}${p.thumbnail.replace(/^\//, '')}`
+          : p.thumbnail || p.src,
+      }
+    }
+    return p
+  })
+}
 
 // افتح قاعدة بيانات IndexedDB
 function openDB() {
@@ -45,7 +61,7 @@ export async function getCatalog() {
           if (items && items.length > 0) {
             // Sort by order or index
             items.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            resolve(items)
+            resolve(normalizePages(items))
           } else {
             // أول مرة: نحفظ الافتراضي ونرجعه
             saveCatalog(INITIAL_PAGES).then(() => resolve(INITIAL_PAGES))
@@ -53,7 +69,7 @@ export async function getCatalog() {
         }
 
         request.onerror = () => {
-          resolve(loadFromLocalStorage())
+          resolve(normalizePages(loadFromLocalStorage()))
         }
       })
     }
@@ -61,7 +77,7 @@ export async function getCatalog() {
     console.error('Error reading from IndexedDB:', e)
   }
 
-  return loadFromLocalStorage()
+  return normalizePages(loadFromLocalStorage())
 }
 
 // حفظ الكتالوج بالكامل
