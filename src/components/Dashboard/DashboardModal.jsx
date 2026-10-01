@@ -352,32 +352,38 @@ export default function DashboardModal({
 
         {/* Modal Header */}
         <div className="dash-header">
-          <div className="dash-header-title">
-            <div className="dash-icon-badge">
-              <SlidersHorizontal size={22} />
+          <div className="dash-header-main">
+            <div className="dash-header-title">
+              <div className="dash-icon-badge">
+                <SlidersHorizontal size={22} />
+              </div>
+              <div className="dash-title-texts">
+                <h2>لوحة تحكم الكتالوج</h2>
+                <p className="dash-header-desc">إدارة صور أعمال الأمين للبرجولات، إضافة أعمال جديدة، حذف وترتيب الصفحات</p>
+              </div>
             </div>
-            <div>
-              <h2>لوحة تحكم الكتالوج</h2>
-              <p>إدارة صور أعمال الأمين للبرجولات، إضافة أعمال جديدة، حذف وترتيب الصفحات</p>
-            </div>
+
+            <button className="dash-close-btn" onClick={onClose} title="إغلاق لوحة التحكم" aria-label="إغلاق">
+              <X size={20} />
+            </button>
           </div>
 
           <div className="dash-header-actions">
             <div className="dash-owner-chip" title="المالك المصرح له">
-              <ShieldCheck size={16} />
-              <span>{ADMIN_EMAIL}</span>
+              <ShieldCheck size={15} />
+              <span className="dash-owner-email">{ADMIN_EMAIL}</span>
             </div>
-            <button className="dash-preview-btn" onClick={onClose} title="الرجوع للكتالوج">
-              <Eye size={16} />
-              <span>عرض الكتالوج</span>
-            </button>
-            <button className="dash-logout-btn" onClick={onLogout} title="تسجيل الخروج وقفل لوحة التحكم">
-              <LogOut size={16} />
-              <span>خروج</span>
-            </button>
-            <button className="dash-close-btn" onClick={onClose} title="إغلاق">
-              <X size={20} />
-            </button>
+
+            <div className="dash-header-action-btns">
+              <button className="dash-preview-btn" onClick={onClose} title="الرجوع للكتالوج">
+                <Eye size={15} />
+                <span>عرض الكتالوج</span>
+              </button>
+              <button className="dash-logout-btn" onClick={onLogout} title="تسجيل الخروج وقفل لوحة التحكم">
+                <LogOut size={15} />
+                <span>خروج</span>
+              </button>
+            </div>
           </div>
         </div>
 
