@@ -1,4 +1,5 @@
 import { INITIAL_PAGES, APP_BASE } from '../data/defaultCatalog'
+import { OFFICIAL_WHATSAPP, formatWhatsAppPhone } from './whatsapp'
 
 const DB_NAME = 'amin_pergola_db'
 const DB_VERSION = 1
@@ -161,7 +162,7 @@ function loadFromLocalStorage() {
 }
 
 export const ADMIN_EMAIL = 'twagdy067@gmail.com'
-export const DEFAULT_WHATSAPP = '201017919385'
+export const DEFAULT_WHATSAPP = OFFICIAL_WHATSAPP
 export const DEFAULT_ADMIN_PASSWORD = '1234'
 
 // إعدادات لوحة التحكم
@@ -170,10 +171,8 @@ export function getSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      // تأكد أن رقم الواتساب محدث دائماً للرقم المطلوب إذا كان افتراضياً قديماً
-      if (!parsed.whatsappNumber || parsed.whatsappNumber === '201000000000') {
-        parsed.whatsappNumber = DEFAULT_WHATSAPP
-      }
+      // تأكد أن رقم الواتساب محدث ومصاغ دائماً بالصيغة الدولية المعتمدة لتطبيق واتساب
+      parsed.whatsappNumber = formatWhatsAppPhone(parsed.whatsappNumber || DEFAULT_WHATSAPP)
       if (!parsed.adminPassword) {
         parsed.adminPassword = DEFAULT_ADMIN_PASSWORD
       }
@@ -184,14 +183,18 @@ export function getSettings() {
   }
   return {
     adminPassword: DEFAULT_ADMIN_PASSWORD,
-    whatsappNumber: DEFAULT_WHATSAPP, // رقم للتواصل السريع 01017919385
+    whatsappNumber: DEFAULT_WHATSAPP, // رقم للتواصل السريع 201017919385
     defaultView: 'book', // 'book' or 'grid'
   }
 }
 
 export function saveSettings(settings) {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+    const sanitized = {
+      ...settings,
+      whatsappNumber: formatWhatsAppPhone(settings?.whatsappNumber),
+    }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(sanitized))
   } catch (e) {
     console.error(e)
   }

@@ -6,7 +6,6 @@ import {
   ChevronsRight,
   ChevronsLeft,
   Maximize2,
-  ZoomIn,
   Search,
   Sparkles,
   Layers,
@@ -54,13 +53,13 @@ const CoverPage = forwardRef(({ logoUrl, totalPages }, ref) => (
 CoverPage.displayName = 'CoverPage'
 
 // صفحة العمل مع التحميل الذكي والـ Skeleton
-const ImagePage = forwardRef(({ page, pageNumber, isNearCurrent, onZoom }, ref) => {
+const ImagePage = forwardRef(({ page, pageNumber, isNearCurrent }, ref) => {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   return (
     <div ref={ref} className="page content-page">
-      <div className="page-inner" onClick={() => onZoom && onZoom(page, pageNumber - 1)}>
+      <div className="page-inner">
         {/* Skeleton Shimmer أثناء التحميل */}
         {!isLoaded && !hasError && (
           <div className="page-skeleton">
@@ -93,20 +92,10 @@ const ImagePage = forwardRef(({ page, pageNumber, isNearCurrent, onZoom }, ref) 
           )
         )}
 
-        {/* شريط معلومات ومعاينة سريع بالصفحة */}
+        {/* شريط معلومات الصفحة */}
         <div className="page-footer-strip">
           <span className="page-num-tag">{pageNumber}</span>
           <span className="page-title-tag">{page.title || `برجولة خشبية #${pageNumber}`}</span>
-          <button
-            className="page-zoom-tag"
-            onClick={(e) => {
-              e.stopPropagation()
-              onZoom(page, pageNumber - 1)
-            }}
-            title="تكبير ومعاينة فائقة الجودة"
-          >
-            <ZoomIn size={14} />
-          </button>
         </div>
       </div>
     </div>
@@ -119,7 +108,6 @@ export default function FlipCatalog({
   currentPage,
   onPageChange,
   logoUrl,
-  onOpenLightbox,
 }) {
   const bookRef = useRef(null)
   const [jumpPageInput, setJumpPageInput] = useState('')
@@ -270,7 +258,6 @@ export default function FlipCatalog({
                 page={page}
                 pageNumber={pageNum}
                 isNearCurrent={isNearCurrent}
-                onZoom={onOpenLightbox}
               />
             )
           })}

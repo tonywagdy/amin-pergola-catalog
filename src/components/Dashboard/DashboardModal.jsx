@@ -29,6 +29,7 @@ import {
 import { compressImage } from '../../utils/imageCompressor'
 import { DEFAULT_CATEGORIES } from '../../data/defaultCatalog'
 import { ADMIN_EMAIL, DEFAULT_WHATSAPP, DEFAULT_ADMIN_PASSWORD } from '../../utils/storage'
+import { formatWhatsAppPhone, OFFICIAL_WHATSAPP } from '../../utils/whatsapp'
 
 export default function DashboardModal({
   isOpen,
@@ -864,8 +865,10 @@ export default function DashboardModal({
               <button
                 className="save-settings-btn"
                 onClick={() => {
-                  onUpdateSettings({ ...settings, whatsappNumber: tempWhatsapp })
-                  showToast('تم حفظ رقم الواتساب بنجاح!')
+                  const formatted = formatWhatsAppPhone(tempWhatsapp || OFFICIAL_WHATSAPP)
+                  setTempWhatsapp(formatted)
+                  onUpdateSettings({ ...settings, whatsappNumber: formatted })
+                  showToast(`تم حفظ رقم الواتساب بنجاح: ${formatted}`)
                 }}
               >
                 <Check size={16} />

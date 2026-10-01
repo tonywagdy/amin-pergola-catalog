@@ -171,7 +171,6 @@ function App() {
               currentPage={currentPage}
               onPageChange={setCurrentPage}
               logoUrl={logoUrl}
-              onOpenLightbox={handleOpenLightbox}
             />
           ) : (
             <GalleryView
@@ -221,7 +220,9 @@ function App() {
       <footer className="app-footer">
         <p>© 2026 الأمين للبرجولات والأعمال الخشبية الفاخرة — جميع الحقوق محفوظة</p>
         <div className="footer-bottom-row">
-          <span className="credit">تصميم وتطوير الكتالوج الذكي التفاعلي بأعلى معايير السرعة والأداء</span>
+          <span className="credit" dir="ltr">
+            Crafted & Developed with Excellence by <strong className="credit-author">Tony Wagdy</strong>
+          </span>
           <button
             className="admin-secret-portal"
             onClick={handleOpenAdminPortal}

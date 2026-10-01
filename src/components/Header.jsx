@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BookOpen, Grid, Phone } from 'lucide-react'
-import { DEFAULT_WHATSAPP } from '../utils/storage'
+import { createWhatsAppLink } from '../utils/whatsapp'
 
 export default function Header({
   viewMode,
@@ -10,7 +10,10 @@ export default function Header({
   logoUrl,
 }) {
   const [logoError, setLogoError] = useState(false)
-  const phone = (whatsappNumber || DEFAULT_WHATSAPP).replace(/[^0-9]/g, '')
+  const waUrl = createWhatsAppLink(
+    whatsappNumber,
+    'السلام عليكم، اطلعت على كتالوج الأمين للبرجولات وأود الاستفسار عن تنفيذ وتصميم برجولة.'
+  )
 
   return (
     <header className="main-header" dir="rtl">
@@ -61,9 +64,9 @@ export default function Header({
       <div className="header-actions">
         {/* WhatsApp Direct Contact Button */}
         <a
-          href={`https://wa.me/${phone}?text=${encodeURIComponent('السلام عليكم، اطلعت على كتالوج الأمين للبرجولات وأود الاستفسار عن تنفيذ وتصميم برجولة.')}`}
+          href={waUrl}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="action-pill whatsapp-pill"
           title="تواصل مباشر عبر واتساب (01017919385)"
         >

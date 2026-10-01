@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, ZoomIn, ZoomOut, RotateCcw, ChevronRight, ChevronLeft, MessageCircle, Download } from 'lucide-react'
-import { DEFAULT_WHATSAPP } from '../utils/storage'
+import { createWhatsAppLink } from '../utils/whatsapp'
 
 export default function LightboxModal({ image, pageNumber, totalPages, onClose, onNext, onPrev, whatsappNumber }) {
   const [scale, setScale] = useState(1)
@@ -22,11 +22,9 @@ export default function LightboxModal({ image, pageNumber, totalPages, onClose, 
   const handleReset = () => setScale(1)
 
   const shareWhatsapp = () => {
-    const text = encodeURIComponent(
-      `مرحباً الأمين للبرجولات، أود الاستفسار عن تفاصيل وسعر هذا التصميم من الكتالوج (صفحة ${pageNumber}: ${image.title || 'تصميم برجولة'}).`
-    )
-    const phone = (whatsappNumber || DEFAULT_WHATSAPP).replace(/[^0-9]/g, '')
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+    const text = `مرحباً الأمين للبرجولات، أود الاستفسار عن تفاصيل وسعر هذا التصميم من الكتالوج (صفحة ${pageNumber}: ${image.title || 'تصميم برجولة'}).`
+    const link = createWhatsAppLink(whatsappNumber, text)
+    window.open(link, '_blank', 'noopener,noreferrer')
   }
 
   return (
