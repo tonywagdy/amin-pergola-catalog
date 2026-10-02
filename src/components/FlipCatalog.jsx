@@ -78,18 +78,16 @@ const ImagePage = forwardRef(({ page, pageNumber, isNearCurrent }, ref) => {
             <span>{page?.title || `صفحة ${pageNumber}`}</span>
           </div>
         ) : (
-          (isNearCurrent || isLoaded) && (
-            <img
-              src={page.src}
-              alt={page.title || `صفحة ${pageNumber}`}
-              className={`page-img ${isLoaded ? 'loaded' : 'loading'}`}
-              loading={isNearCurrent ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-              onLoad={() => setIsLoaded(true)}
-              onError={() => setHasError(true)}
-            />
-          )
+          <img
+            src={page.src}
+            alt={page.title || `صفحة ${pageNumber}`}
+            className={`page-img ${isLoaded ? 'loaded' : 'loading'}`}
+            loading={isNearCurrent ? 'eager' : 'lazy'}
+            decoding="async"
+            draggable={false}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+          />
         )}
 
         {/* شريط معلومات الصفحة */}
@@ -177,6 +175,21 @@ export default function FlipCatalog({
     })
   }, [currentPage, pages])
 
+  // Sync external page changes (e.g. from gallery or jump) with flipbook instance
+  useEffect(() => {
+    if (bookRef.current?.pageFlip) {
+      try {
+        const pageFlip = bookRef.current.pageFlip()
+        const currentBookPage = pageFlip?.getCurrentPageIndex()
+        if (typeof currentBookPage === 'number' && currentBookPage !== currentPage && currentPage >= 0 && currentPage < totalPages) {
+          pageFlip.flip(currentPage)
+        }
+      } catch {
+        // ignore animation collision
+      }
+    }
+  }, [currentPage, totalPages])
+
   return (
     <section className={`book-section ${isFullscreen ? 'fullscreen-mode' : ''}`} dir="rtl">
       {/* شريط الإحصاءات السريع وأدوات الكتالوج */}
@@ -220,7 +233,9 @@ export default function FlipCatalog({
       {/* كتاب التقليب */}
       <div className="book-shell">
         <HTMLFlipBook
+          key={`flipbook-${pages.length}-${pages[0]?.id || ''}-${pages[pages.length - 1]?.id || ''}`}
           ref={bookRef}
+          startPage={Math.max(0, Math.min(currentPage, pages.length))}
           width={450}
           height={630}
           size="stretch"

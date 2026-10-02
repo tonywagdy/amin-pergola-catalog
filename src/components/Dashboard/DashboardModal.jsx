@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   X,
   Upload,
@@ -25,6 +25,8 @@ import {
   LogOut,
   ShieldCheck,
   KeyRound,
+  Sparkles,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { compressImage } from '../../utils/imageCompressor'
 import { DEFAULT_CATEGORIES } from '../../data/defaultCatalog'
@@ -40,12 +42,14 @@ export default function DashboardModal({
   settings,
   onUpdateSettings,
   onLogout,
+  onNavigateToPage,
 }) {
   const [activeTab, setActiveTab] = useState('manage') // 'manage', 'add', 'backup', 'settings'
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('الكل')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [notification, setNotification] = useState(null)
+  const [justAddedInfo, setJustAddedInfo] = useState(null)
 
   // Drag and drop state
   const [draggedIndex, setDraggedIndex] = useState(null)
@@ -59,8 +63,48 @@ export default function DashboardModal({
   const [uploadPosition, setUploadPosition] = useState('end') // 'start', 'end', 'after'
   const [afterPageNum, setAfterPageNum] = useState(1)
   const [urlInput, setUrlInput] = useState('')
+  const [applyCatalogFrame, setApplyCatalogFrame] = useState(true)
+  const [frameFitMode, setFrameFitMode] = useState('cover') // 'cover', 'contain'
+  const [livePreviewUrl, setLivePreviewUrl] = useState(null)
+  const [isPreviewGenerating, setIsPreviewGenerating] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processLogs, setProcessLogs] = useState([])
+
+  // Live frame preview generator
+  useEffect(() => {
+    let active = true
+    const targetSource = uploadFiles[0] || (urlInput.trim() ? urlInput.trim() : null)
+
+    if (!targetSource) {
+      return
+    }
+
+    // Schedule async task
+    const timer = setTimeout(() => {
+      if (!active) return
+      setIsPreviewGenerating(true)
+      compressImage(targetSource, {
+        applyFrame: applyCatalogFrame,
+        fitMode: frameFitMode,
+        quality: 0.78,
+      })
+        .then((res) => {
+          if (active) {
+            setLivePreviewUrl(res.thumbnail || res.dataUrl)
+            setIsPreviewGenerating(false)
+          }
+        })
+        .catch((err) => {
+          console.warn('Preview generation failed:', err)
+          if (active) setIsPreviewGenerating(false)
+        })
+    }, 10)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [uploadFiles, urlInput, applyCatalogFrame, frameFitMode])
 
   // Edit single image state
   const [editingItem, setEditingItem] = useState(null)
@@ -218,7 +262,11 @@ export default function DashboardModal({
       setProcessLogs([...logs])
 
       try {
-        const compressed = await compressImage(file, 1500, 0.84)
+        const compressed = await compressImage(file, {
+          applyFrame: applyCatalogFrame,
+          fitMode: frameFitMode,
+          quality: 0.85,
+        })
         const id = `custom-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 6)}`
         const title = uploadTitlePrefix.trim()
           ? `${uploadTitlePrefix} #${pages.length + newItems.length + 1}`
@@ -226,14 +274,20 @@ export default function DashboardModal({
 
         newItems.push({
           id,
+          pageNum: pages.length + newItems.length + 1,
           title,
           category: finalCategory,
           src: compressed.dataUrl,
           thumbnail: compressed.thumbnail,
           isCustom: true,
+          isDefault: false,
           addedAt: Date.now(),
         })
-        logs.push(`✓ تم تحسين الصورة بنجاح (وفرت الحجم لمظهر سريع جداً)`)
+        logs.push(
+          applyCatalogFrame
+            ? `✓ تم تركيب فريم وقالب الكتالوج الرسمي وضغط الصورة بنجاح`
+            : `✓ تم تحسين وضغط الصورة بنجاح`
+        )
         setProcessLogs([...logs])
       } catch (err) {
         console.error(err)
@@ -244,34 +298,68 @@ export default function DashboardModal({
 
     // 2. Process URL if given
     if (urlInput.trim()) {
-      const id = `url-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`
-      newItems.push({
-        id,
-        title: uploadTitlePrefix.trim() || 'تصميم من رابط',
-        category: finalCategory,
-        src: urlInput.trim(),
-        thumbnail: urlInput.trim(),
-        isCustom: true,
-        addedAt: Date.now(),
-      })
-      logs.push(`✓ تمت إضافة الصورة من الرابط بنجاح`)
-      setProcessLogs([...logs])
+      try {
+        logs.push(`جاري جلب ومعالجة الصورة من الرابط...`)
+        setProcessLogs([...logs])
+        const compressed = await compressImage(urlInput.trim(), {
+          applyFrame: applyCatalogFrame,
+          fitMode: frameFitMode,
+          quality: 0.85,
+        })
+        const id = `url-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`
+        newItems.push({
+          id,
+          pageNum: pages.length + newItems.length + 1,
+          title: uploadTitlePrefix.trim() || 'تصميم من رابط',
+          category: finalCategory,
+          src: compressed.dataUrl,
+          thumbnail: compressed.thumbnail,
+          isCustom: true,
+          isDefault: false,
+          addedAt: Date.now(),
+        })
+        logs.push(
+          applyCatalogFrame
+            ? `✓ تم دمج الصورة داخل قالب وفريم الكتالوج الملكي بنجاح`
+            : `✓ تمت إضافة الصورة من الرابط بنجاح`
+        )
+        setProcessLogs([...logs])
+      } catch (urlErr) {
+        console.error(urlErr)
+        logs.push(`⚠️ تعذر معالجة رابط الصورة: ${urlInput.trim()}`)
+        setProcessLogs([...logs])
+      }
     }
 
     if (newItems.length > 0) {
       let updatedPages = [...pages]
+      let targetPageNum = 1
       if (uploadPosition === 'start') {
         updatedPages = [...newItems, ...updatedPages]
+        targetPageNum = 1
       } else if (uploadPosition === 'after') {
         const insertIdx = Math.max(0, Math.min(updatedPages.length, afterPageNum))
         updatedPages.splice(insertIdx, 0, ...newItems)
+        targetPageNum = insertIdx + 1
       } else {
         // 'end'
+        targetPageNum = updatedPages.length + 1
         updatedPages = [...updatedPages, ...newItems]
       }
 
-      onUpdatePages(updatedPages)
-      showToast(`تمت إضافة ${newItems.length} صورة إلى الكتالوج بنجاح!`)
+      try {
+        await onUpdatePages(updatedPages)
+        setJustAddedInfo({
+          count: newItems.length,
+          targetPageNum,
+          timestamp: Date.now(),
+        })
+        showToast(`تمت إضافة ${newItems.length} صورة إلى الكتالوج بنجاح!`, 'success')
+      } catch (saveErr) {
+        console.error('Error saving updated pages:', saveErr)
+        showToast('تمت إضافة الصورة ولكن تعذر التخزين الدائم', 'error')
+      }
+
       setUploadFiles([])
       setUrlInput('')
       setUploadTitlePrefix('')
@@ -279,7 +367,7 @@ export default function DashboardModal({
       setTimeout(() => {
         setIsProcessing(false)
         setActiveTab('manage')
-      }, 1000)
+      }, 700)
     } else {
       setIsProcessing(false)
     }
@@ -449,6 +537,33 @@ export default function DashboardModal({
         {/* Tab 1: Manage & Reorder */}
         {activeTab === 'manage' && (
           <div className="dash-tab-body">
+            {/* Banner for newly added items */}
+            {justAddedInfo && (
+              <div className="just-added-banner">
+                <div className="banner-text">
+                  <Sparkles size={18} />
+                  <span>
+                    تمت إضافة <strong>{justAddedInfo.count} صورة</strong> بنجاح إلى الكتالوج! (الصفحة #{justAddedInfo.targetPageNum})
+                  </span>
+                </div>
+                <div className="banner-actions">
+                  <button
+                    className="banner-jump-btn"
+                    onClick={() => {
+                      onNavigateToPage?.(justAddedInfo.targetPageNum)
+                      onClose()
+                    }}
+                  >
+                    <Eye size={15} />
+                    <span>معاينة في الكتالوج الآن</span>
+                  </button>
+                  <button className="banner-dismiss-btn" onClick={() => setJustAddedInfo(null)}>
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Filter & Search Bar */}
             <div className="dash-controls-row">
               <div className="dash-search-input">
@@ -561,6 +676,17 @@ export default function DashboardModal({
 
                     {/* Reorder & Action Buttons */}
                     <div className="dash-card-actions">
+                      <button
+                        className="action-btn view-btn"
+                        onClick={() => {
+                          onNavigateToPage?.(actualIndex + 1)
+                          onClose()
+                        }}
+                        title="معاينة هذه الصفحة في الكتالوج"
+                      >
+                        <Eye size={15} />
+                      </button>
+
                       <button
                         className="action-btn"
                         onClick={() => handleMoveUp(actualIndex)}
@@ -729,6 +855,98 @@ export default function DashboardModal({
                       value={afterPageNum}
                       onChange={(e) => setAfterPageNum(parseInt(e.target.value, 10) || 1)}
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Automatic Catalog Frame Options & Live Preview */}
+              <div className="catalog-frame-box">
+                <div className="frame-box-header">
+                  <div className="frame-box-title">
+                    <div className="sparkle-badge">
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <div className="frame-title-row">
+                        <h4>تطبيق قالب وفريم كتالوج الأمين للبرجولات تلقائياً</h4>
+                        <span className="recommended-tag">موصى به</span>
+                      </div>
+                      <p>
+                        يقوم النظام بدمج صورتك آلياً داخل الفريم الخشبي وإطار الرمال الذهبية المعتمد للكتالوج بنفس مقاسات ونمط الصفحات الـ 56 السابقة بدون الحاجة لتصميمها يدوياً في برامج التصميم.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="frame-toggle-switch" title="تفعيل / تعطيل الفريم التلقائي">
+                    <input
+                      type="checkbox"
+                      checked={applyCatalogFrame}
+                      onChange={(e) => setApplyCatalogFrame(e.target.checked)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+
+                {applyCatalogFrame && (
+                  <div className="frame-options-body">
+                    <div className="frame-mode-row">
+                      <span className="mode-label">طريقة ملاءمة الصورة داخل الإطار:</span>
+                      <div className="mode-btn-group">
+                        <button
+                          type="button"
+                          className={`mode-btn ${frameFitMode === 'cover' ? 'active' : ''}`}
+                          onClick={() => setFrameFitMode('cover')}
+                        >
+                          <span className="mode-title">تغطية كاملة للإطار</span>
+                          <span className="mode-desc">(موصى به - مثل باقي صفحات الكتالوج)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`mode-btn ${frameFitMode === 'contain' ? 'active' : ''}`}
+                          onClick={() => setFrameFitMode('contain')}
+                        >
+                          <span className="mode-title">احتواء الصورة بالكامل</span>
+                          <span className="mode-desc">(يُظهر أبعاد الصورة كاملة دون قص)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Live Preview Card */}
+                    {(uploadFiles.length > 0 || urlInput.trim()) && (
+                      <div className="frame-preview-section">
+                        <div className="preview-header">
+                          <div className="preview-title">
+                            <ImageIcon size={16} />
+                            <span>معاينة حية ومباشرة لشكل الصفحة في الكتالوج:</span>
+                          </div>
+                          {isPreviewGenerating && (
+                            <span className="preview-status-spinner">
+                              <RefreshCw size={13} className="animate-spin" />
+                              <span>تحديث المعاينة...</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="preview-canvas-container">
+                          {livePreviewUrl ? (
+                            <div className="preview-catalog-frame-display">
+                              <img
+                                src={livePreviewUrl}
+                                alt="معاينة قالب الكتالوج"
+                                className="preview-rendered-page"
+                              />
+                            </div>
+                          ) : (
+                            <div className="preview-generating-box">
+                              <RefreshCw size={24} className="animate-spin" />
+                              <span>جاري معالجة وتركيب الفريم للمعاينة...</span>
+                            </div>
+                          )}
+                        </div>
+                        <p className="preview-notice-text">
+                          ✨ بمجرد الحفظ، ستظهر هذه الصورة بالكتالوج التفاعلي والمعرض بنفس هذا الإطار الملكي الموحد.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

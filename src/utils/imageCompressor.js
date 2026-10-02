@@ -1,68 +1,75 @@
-// ضغط وتحسين الصور قبل حفظها لتوفير مساحة وسرعة فائقة في العرض
+// ضغط وتحسين الصور وتطبيق قالب وفريم الكتالوج تلقائياً
+import { composeImageWithCatalogFrame } from './frameTemplate'
 
-export async function compressImage(file, maxWidth = 1400, quality = 0.85) {
+/**
+ * معالجة وضغط الصورة ودمجها تلقائياً داخل فريم وقالب الكتالوج
+ * @param {File|Blob|string} source إما ملف صورة من الجهاز أو رابط DataURL / URL
+ * @param {Object} options خيارات التنسيق والفريم
+ */
+export async function compressImage(source, options = {}) {
+  const {
+    applyFrame = true,
+    fitMode = 'cover',
+    quality = 0.85,
+  } = typeof options === 'object' ? options : { applyFrame: true }
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
+    let objectUrl = null
 
-    reader.onload = (event) => {
-      const img = new Image()
-      img.src = event.target.result
+    const handleImageReady = async (img) => {
+      try {
+        const result = await composeImageWithCatalogFrame(img, {
+          applyFrame,
+          fitMode,
+          quality,
+        })
 
-      img.onload = () => {
-        let width = img.width
-        let height = img.height
-
-        // تقليل الأبعاد بنسبة متناسقة إذا كانت أكبر من الحد الأقصى
-        if (width > maxWidth || height > maxWidth) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width)
-            width = maxWidth
-          } else {
-            width = Math.round((width * maxWidth) / height)
-            height = maxWidth
+        if (objectUrl) {
+          try {
+            URL.revokeObjectURL(objectUrl)
+          } catch {
+            // ignore
           }
         }
 
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-
-        const ctx = canvas.getContext('2d')
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = 'high'
-        ctx.drawImage(img, 0, 0, width, height)
-
-        // نفضل صيغة webp أو jpeg
-        let mimeType = 'image/jpeg'
-        if (file.type === 'image/webp') mimeType = 'image/webp'
-        if (file.type === 'image/png' && file.size < 500 * 1024) mimeType = 'image/png'
-
-        const dataUrl = canvas.toDataURL(mimeType, quality)
-
-        // توليد صورة مصغرة (Thumbnail) للوحة التحكم
-        const thumbCanvas = document.createElement('canvas')
-        const thumbWidth = 280
-        const thumbHeight = Math.round((height * thumbWidth) / width)
-        thumbCanvas.width = thumbWidth
-        thumbCanvas.height = thumbHeight
-        const thumbCtx = thumbCanvas.getContext('2d')
-        thumbCtx.drawImage(img, 0, 0, thumbWidth, thumbHeight)
-        const thumbUrl = thumbCanvas.toDataURL('image/jpeg', 0.7)
-
         resolve({
-          dataUrl,
-          thumbnail: thumbUrl,
-          width,
-          height,
-          originalSize: file.size,
-          compressedLength: dataUrl.length,
+          ...result,
+          originalSize: typeof source === 'object' && source?.size ? source.size : (result.dataUrl?.length || 0),
+          compressedLength: result.dataUrl?.length || 0,
         })
+      } catch (err) {
+        if (objectUrl) {
+          try {
+            URL.revokeObjectURL(objectUrl)
+          } catch {
+            // ignore
+          }
+        }
+        reject(err)
       }
-
-      img.onerror = (err) => reject(err)
     }
 
+    const img = new Image()
+
+    // 1. إذا كان المصدر رابطاً نصياً
+    if (typeof source === 'string') {
+      if (source.startsWith('http://') || source.startsWith('https://')) {
+        img.crossOrigin = 'anonymous'
+      }
+      img.onload = () => handleImageReady(img)
+      img.onerror = (err) => reject(new Error('فشل تحميل الصورة من الرابط: ' + err))
+      img.src = source
+      return
+    }
+
+    // 2. إذا كان المصدر كائن File أو Blob، نستخدم FileReader كطريقة مضمونة بنسبة 100% لتجنب قيود CORS على blob: URLs في بعض المتصفحات
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      img.onload = () => handleImageReady(img)
+      img.onerror = (err) => reject(err)
+      img.src = e.target.result
+    }
     reader.onerror = (err) => reject(err)
+    reader.readAsDataURL(source)
   })
 }

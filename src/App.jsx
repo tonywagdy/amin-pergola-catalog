@@ -5,6 +5,7 @@ import GalleryView from './components/GalleryView'
 import DashboardModal from './components/Dashboard/DashboardModal'
 import AdminAuthModal from './components/Dashboard/AdminAuthModal'
 import LightboxModal from './components/LightboxModal'
+import ErrorBoundary from './components/ErrorBoundary'
 import {
   getCatalog,
   saveCatalog,
@@ -166,12 +167,14 @@ function App() {
       ) : (
         <>
           {viewMode === 'book' ? (
-            <FlipCatalog
-              pages={pages}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              logoUrl={logoUrl}
-            />
+            <ErrorBoundary>
+              <FlipCatalog
+                pages={pages}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                logoUrl={logoUrl}
+              />
+            </ErrorBoundary>
           ) : (
             <GalleryView
               pages={pages}
@@ -200,6 +203,7 @@ function App() {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onLogout={handleAdminLogout}
+        onNavigateToPage={handleSelectPageFromGallery}
       />
 
       {/* شاشة التكبير والمعاينة المكبرة Lightbox */}
