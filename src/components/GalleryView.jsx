@@ -1,3 +1,4 @@
+import CatalogImage from './CatalogImage'
 import { useState, useMemo } from 'react'
 import { Search, Eye, BookOpen, Layers } from 'lucide-react'
 
@@ -90,7 +91,8 @@ export default function GalleryView({ pages, onSelectPage, onOpenLightbox }) {
             return (
               <div key={page.id} className="gallery-card">
                 <div className="gallery-img-container" onClick={() => onOpenLightbox(page, actualIndex)}>
-                  <img
+                  <CatalogImage
+                    framed={page.framed}
                     src={page.thumbnail || page.src}
                     alt={page.title || `صفحة ${pageNum}`}
                     className="gallery-thumb"

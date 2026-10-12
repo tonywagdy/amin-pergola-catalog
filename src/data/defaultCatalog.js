@@ -60,6 +60,7 @@ const NEW_PAGES = NEW_CATEGORIES.map((category, index) => {
     category,
     src,
     thumbnail: src,
+    framed: true,
     isDefault: true,
     addedAt: Date.UTC(2026, 9, 13),
   }

@@ -1,3 +1,4 @@
+import CatalogImage from './CatalogImage'
 import { useState, useEffect } from 'react'
 import { X, ZoomIn, ZoomOut, RotateCcw, ChevronRight, ChevronLeft, MessageCircle, Download } from 'lucide-react'
 import { createWhatsAppLink } from '../utils/whatsapp'
@@ -77,7 +78,8 @@ export default function LightboxModal({ image, pageNumber, totalPages, onClose, 
           )}
 
           <div className="lightbox-img-wrapper">
-            <img
+            <CatalogImage
+              framed={image.framed}
               src={image.src}
               alt={image.title || 'تصميم برجولة'}
               className="lightbox-img"

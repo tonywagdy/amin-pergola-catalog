@@ -1128,3 +1128,34 @@
   background: var(--wood-dark);
 }
 
+
+/* Original printed wooden frame, shared by the book, gallery and preview. */
+.catalog-framed-image {
+  position: relative;
+  display: block;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.catalog-framed-image .catalog-framed-photo {
+  position: absolute;
+  inset: 6.3% 8.91%;
+  width: 82.18%;
+  height: 87.4%;
+  object-fit: contain;
+  background: #ded6c7;
+  display: block;
+}
+.catalog-frame-logo {
+  position: absolute;
+  right: 10%;
+  bottom: 7%;
+  width: 23%;
+  height: auto;
+  pointer-events: none;
+}
+.lightbox-img.catalog-framed-image {
+  width: min(70vw, calc((88vh - 140px) * 0.707));
+  aspect-ratio: 1414 / 2000;
+  flex-shrink: 0;
+}

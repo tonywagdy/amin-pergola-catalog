@@ -1,3 +1,4 @@
+import CatalogImage from './CatalogImage'
 import { forwardRef, useEffect, useRef, useState, useCallback } from 'react'
 import HTMLFlipBook from 'react-pageflip'
 import {
@@ -78,7 +79,8 @@ const ImagePage = forwardRef(({ page, pageNumber, isNearCurrent }, ref) => {
             <span>{page?.title || `صفحة ${pageNumber}`}</span>
           </div>
         ) : (
-          <img
+          <CatalogImage
+            framed={page.framed}
             src={page.src}
             alt={page.title || `صفحة ${pageNumber}`}
             className={`page-img ${isLoaded ? 'loaded' : 'loading'}`}
